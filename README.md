@@ -1,1 +1,69 @@
-# Student Performance Reports Generator\n\nPython tool for generating student performance reports from CSV files with modular architecture.\n\n##  Features\n\n- **Multi-file support** - Process multiple CSV files simultaneously\n- **Beautiful tables** - Formatted console output with tabulate\n- **Extensible architecture** - Easy to add new report types\n- **Full test coverage** - Comprehensive pytest suite\n- **Error handling** - Robust validation and error management\n\n## 📦 Installation\n\n```bash\n# Clone repository\ngit clone <your-repo-url>\ncd project\n\n# Install dependencies\npip install -r requirements.txt\n```\n\n## 🏗️ Project Structure\n\n```\nproject/\n├── main.py                      # Main application entry point\n├── core/\n│   ├── __init__.py             # Core package initialization\n│   └── data_loader.py          # Data loading and processing utilities\n├── reports/\n│   ├── __init__.py             # Report registry and factory\n│   └── student_performance.py  # Student performance report generator\n├── utils/\n│   ├── __init__.py             # Utilities package\n│   └── console_output.py       # Console output formatting\n├── tests/\n│   ├── __init__.py             # Tests package\n│   └── test_student_performance.py  # Report tests\n├── requirements.txt            # Python dependencies\n└── README.md                   # This file\n```\n\n## 📋 Input Format\n\nCSV files must include these columns:\n\n```csv\nstudent_name,subject,teacher_name,date,grade\nIvanov Ivan,Mathematics,Petrov Petr,2023-10-10,5\nSidorova Maria,Physics,Sokolov Alex,2023-10-12,4\nKuznetsova Anna,Chemistry,Orlova Olga,2023-10-15,5\n```\n\n## 💻 Usage\n\n### Basic Command\n\n```bash\npython main.py --files students1.csv students2.csv --report student_perf\n```\n\n### Command Line Options\n\n| Option | Description | Example |\n|--------|-------------|---------|\n| `--files` | CSV file paths (multiple supported) | `--files file1.csv file2.csv` |\n| `--report` | Report type to generate | `--report student_perf` |\n\n### Example Output\n\n```text\n+----+---------------------+---------+\n|    | student_name        |   grade |\n+----+---------------------+---------+\n|  0 | Ivanov Ivan         |     4.8 |\n|  1 | Sidorova Maria      |     4.7 |\n|  2 | Petrov Alexey       |     4.5 |\n|  3 | Kuznetsova Anna     |     4.3 |\n+----+---------------------+---------+\n```\n\n## 🧪 Testing\n\n### Run Test Suite\n\n```bash\n# Run all tests with verbose output\npytest tests/ -v\n\n# Run with coverage report\npytest --cov=. --cov-report=term-missing\n\n# Generate HTML coverage report\npytest --cov=. --cov-report=html\n\n# Check coverage percentage\npytest --cov=. --cov-report=term-missing:skip-covered\n```\n\n### Test Coverage Goals\n\n- ✅ Core data loader: 100%\n- ✅ Report generators: 100% \n- ✅ Utility functions: 100%\n- ✅ Main application: 90%+\n\n## 🏗️ Architecture\n\n### Core Components\n\n**`core/data_loader.py`** - Data ingestion and validation:\n- CSV file reading\n- Data type validation\n- Error handling\n- Data processing utilities\n\n**`reports/student_performance.py`** - Report generation:\n- Grade calculations\n- Student sorting\n- Table formatting\n- Performance metrics\n\n**`utils/console_output.py`** - Output formatting:\n- Table styling\n- Color support\n- Progress indicators\n- Error messages\n\n### Report Registry System\n\n**`reports/__init__.py`** - Central report factory:\n\n```python\nfrom .student_performance import StudentPerformanceReport\n\nREPORTS = {\n    \"student_perf\": StudentPerformanceReport,\n    # Future reports:\n    # \"teacher_perf\": TeacherPerformanceReport,\n    # \"course_perf\": CoursePerformanceReport,\n    # \"subject_perf\": SubjectPerformanceReport,\n}\n\ndef get_report(name: str):\n    \"\"\"Factory function to retrieve report classes by name.\"\"\"\n    return REPORTS.get(name)\n```\n\n## 🔧 Extending with New Reports\n\n### 1. Create Report Class\n\n```python\n# reports/teacher_performance.py\nfrom typing import List, Dict, Any\nfrom tabulate import tabulate\nfrom core.data_loader import process_teacher_data\n\nclass TeacherPerformanceReport:\n    \"\"\"Generate teacher performance reports.\"\"\"\n    \n    def generate(self, data: List[Dict[str, Any]]) -> str:\n        processed_data = process_teacher_data(data)\n        sorted_data = sorted(processed_data, key=lambda x: x['avg_grade'], reverse=True)\n        \n        return tabulate(sorted_data, headers='keys', tablefmt='grid')\n```\n\n### 2. Register New Report\n\n```python\n# reports/__init__.py\nfrom .student_performance import StudentPerformanceReport\nfrom .teacher_performance import TeacherPerformanceReport\n\nREPORTS = {\n    \"student_perf\": StudentPerformanceReport,\n    \"teacher_perf\": TeacherPerformanceReport,\n}\n```\n\n### 3. Add Data Processing\n\n```python\n# core/data_loader.py\ndef process_teacher_data(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:\n    \"\"\"Process data for teacher performance reports.\"\"\"\n    teacher_stats = {}\n    \n    for row in data:\n        teacher = row['teacher_name']\n        grade = float(row['grade'])\n        \n        if teacher not in teacher_stats:\n            teacher_stats[teacher] = {'grades': [], 'student_count': 0}\n        \n        teacher_stats[teacher]['grades'].append(grade)\n        teacher_stats[teacher]['student_count'] += 1\n    \n    return [\n        {\n            'teacher_name': teacher,\n            'avg_grade': round(sum(stats['grades']) / len(stats['grades']), 2),\n            'students_count': stats['student_count']\n        }\n        for teacher, stats in teacher_stats.items()\n    ]\n```\n\n### 4. Create Tests\n\n```python\n# tests/test_teacher_performance.py\nimport pytest\nfrom reports.teacher_performance import TeacherPerformanceReport\n\nclass TestTeacherPerformanceReport:\n    \n    def test_teacher_report_generation(self):\n        sample_data = [\n            {'teacher_name': 'Petrov Petr', 'grade': '5'},\n            {'teacher_name': 'Sokolov Alex', 'grade': '4'},\n            {'teacher_name': 'Petrov Petr', 'grade': '3'},\n        ]\n        \n        report = TeacherPerformanceReport()\n        result = report.generate(sample_data)\n        \n        assert 'Petrov Petr' in result\n        assert 'Sokolov Alex' in result\n```\n\n## 🛡️ Error Handling\n\nThe application handles:\n\n- **File errors**: Missing files, permission issues\n- **Format errors**: Invalid CSV structure, missing columns  \n- **Data errors**: Non-numeric grades, missing values\n- **Configuration errors**: Invalid report types, argument errors\n\n## 📁 Example Files\n\n### students1.csv\n```csv\nstudent_name,subject,teacher_name,date,grade\nIvanov Ivan,Mathematics,Petrov Petr,2023-10-10,5\nSidorova Maria,Physics,Sokolov Alex,2023-10-12,4\nKuznetsova Anna,Chemistry,Orlova Olga,2023-10-15,5\n```\n\n### students2.csv  \n```csv\nstudent_name,subject,teacher_name,date,grade\nPetrov Alexey,Biology,Volkov Denis,2023-10-16,5\nSmirnova Olga,History,Novikova Elena,2023-10-17,4\nIvanov Ivan,Geography,Fedorov Maxim,2023-10-18,3\n```\n\n## 🎨 Development Standards\n\n### Code Style\n- PEP 8 compliance\n- Type hints throughout\n- Comprehensive docstrings\n- Modular architecture\n\n### Testing Standards\n- 100% test coverage goal\n- pytest framework\n- Mocking external dependencies\n- Edge case testing\n\n### Documentation\n- README with usage examples\n- Code comments\n- Type annotations\n- Error handling documentation\n\n## 📈 Performance\n\n- Handles thousands of records efficiently\n- Memory-optimized processing\n- Fast CSV parsing\n- Minimal dependencies\n\n## 🔮 Roadmap\n\n### Short Term\n- [ ] Teacher performance reports\n- [ ] Course performance reports  \n- [ ] Subject analysis reports\n- [ ] Date range filtering\n\n### Medium Term\n- [ ] JSON/CSV export options\n- [ ] HTML report generation\n- [ ] Data visualization charts\n- [ ] Database integration\n\n### Long Term\n- [ ] Web interface\n- [ ] Real-time data processing\n- [ ] Advanced analytics\n- [ ] Machine learning integration\n\n## 📄 License\n\nMIT License - see LICENSE file for details.\n\n## 🤝 Contributing\n\n1. Fork the repository\n2. Create feature branch (`git checkout -b feature/amazing-feature`)\n3. Commit changes (`git commit -m 'Add amazing feature'`)\n4. Push to branch (`git push origin feature/amazing-feature`)  \n5. Open Pull Request\n\n## 🐛 Issue Reporting\n\nFound a bug? Please create an issue with:\n- Error message\n- Steps to reproduce\n- Expected vs actual behavior\n- Environment details\n\n## 💬 Support\n\nFor questions and support:\n- Check documentation\n- Search existing issues\n- Create new issue for bugs\n- Discussions for feature requests\n\n---\n\n**⭐ Star this project if you find it useful!**
+# 📊 Student Performance Reports Generator
+
+```markdown
+# 📊 Генератор отчетов успеваемости студентов
+
+Python-скрипт для формирования отчетов из CSV файлов с данными об успеваемости.
+
+## 🚀 Возможности
+
+- Чтение нескольких CSV файлов
+- Красивые таблицы в консоли
+- Легкое добавление новых отчетов
+- Полное покрытие тестами
+- Обработка ошибок
+
+## 📦 Установка
+
+```bash
+pip install -r requirements.txt
+или
+pip install -r requirements-dev.txt
+```
+
+## 💻 Использование
+
+```bash
+python main.py --files students1.csv students2.csv --report student_perf
+```
+
+### Параметры:
+- `--files` - пути к CSV файлам
+- `--report` - тип отчета (пока только `student_perf`)
+
+## 🏗️ Структура проекта
+
+```
+project/
+├── main.py
+├── core/           # Загрузка данных
+├── reports/        # Генераторы отчетов  
+├── utils/          # Вспомогательные функции
+└── tests/          # Тесты
+```
+
+## 🧪 Тестирование
+
+```bash
+pytest tests/ -v
+pytest --cov=. --cov-report=term-missing
+```
+
+## 🔧 Добавление новых отчетов
+
+1. Создать класс отчета в `reports/`
+2. Зарегистрировать в `reports/__init__.py`
+3. Добавить обработку данных в `core/data_loader.py`
+4. Написать тесты
+
+## 📄 Формат CSV
+
+```csv
+student_name,subject,teacher_name,date,grade
+Иванов Иван,Математика,Петров Пётр,2023-10-10,5
+```
+
+---
+
+⭐ Если проект полезен - поставьте звездочку!
+```
